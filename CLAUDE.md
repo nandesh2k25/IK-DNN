@@ -80,6 +80,12 @@ or converges worse than a constant-mean predictor, check this first.
   from-scratch build constraints, Colab workflow, documentation habits).
   Consult it before architecture/scope decisions, notebook edits, or
   writing a performance review. Only available in this project directory.
+- `notebook_map.md` — cached index of the Colab notebook's cell IDs
+  (`august_thesis_claude`), so edits can target a cell directly instead of
+  fetching the whole notebook first. Kept in sync via
+  `.claude/skills/notebook_map/SKILL.md` — consult and apply that skill
+  any time a notebook cell is added/updated/deleted/moved, or the user
+  reports a manual edit made in the browser.
 
 ## Working conventions
 - The Colab MCP connection (`colab-proxy-mcp`) can silently disconnect

@@ -3,3 +3,7 @@ __pycache__/
 node_modules/
 .idea/
 .DS_Store
+
+# Reference papers / PDFs — this repo is public, so third-party papers stay
+# local only (copyright). Keep them on disk, just don't track them.
+*.pdf
