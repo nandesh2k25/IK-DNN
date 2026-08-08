@@ -147,6 +147,22 @@ Normalization: $\sin\theta_1,\cos\theta_1$ are left un-normalized (identity, mea
 
 **Not yet done:** sin/cos encoding for $\theta_2,\theta_3$ (not needed — they never wrap); resolving the branch-ambiguity / singularity issues from §1.2 (a representation change alone cannot fix these — see §6).
 
+### 3.10 Mini-Batch Gradient Descent (v5)
+
+Full-batch gradient descent (§3.6) takes one parameter update per pass over the *entire* training set — every step is a large matmul over all $m$ examples. Mini-batch gradient descent instead splits each pass ("epoch") into batches of size $B$ and takes one update per batch, so parameters update $\lceil m/B \rceil$ times per epoch instead of once.
+
+**Batch construction** (`random_mini_batches`, mirrors the Andrew Ng Course 2 convention): shuffle the $m$ training columns with a random permutation $\pi$, then partition into batches of size $B$ (the last batch may be smaller than $B$ if $B \nmid m$):
+$$
+n_b = \left\lceil \frac{m}{B} \right\rceil, \qquad \text{batch}_b = \{X_{:,\pi(i)}, Y_{:,\pi(i)}\}_{i \in [(b-1)B,\, bB)}
+$$
+
+**Per-epoch cost** (size-weighted average across batches, so it stays comparable in scale to the full-batch cost of §3.4):
+$$
+J_{\text{epoch}} = \sum_{b=1}^{n_b} \frac{m_b}{m}\, J_b, \qquad J_b = \frac{1}{2 m_b}\sum_{i \in \text{batch}_b} \left\lVert A^{[L](i)} - Y^{(i)} \right\rVert_2^2
+$$
+
+Forward propagation (§3.3), backward propagation (§3.5), and the update rule (§3.6) are all unchanged — each is simply applied once per batch instead of once per epoch. Data is reshuffled every epoch. This is still plain gradient descent (no momentum/Adam) — only the batching changed.
+
 ### 3.8 Evaluation Metrics
 
 **Circular angular MAE** (accounts for the $\pm180°$ wrap so a correct prediction right at the boundary isn't scored as a huge error):
@@ -177,14 +193,16 @@ $$
 
 ## 4. Results — Model A (From-Scratch Network)
 
-Architecture: `[n_in, 64, 64, 4]`, ReLU hidden / linear output, $\alpha=0.05$, 3000 iterations of full-batch gradient descent, seed=1.
+Architecture (v0–v3): `[n_in, 64, 64, 4]`, ReLU hidden / linear output, $\alpha=0.05$, 3000 iterations of full-batch gradient descent, seed=1. **Architecture (v4–v5): `[4, 256, 128, 64, 4]`** — see the v3→v4 caveat below.
 
 | Version | $n_{\text{in}}$ | $N$ samples | Final cost $J$ | $\theta_1$ MAE (°) | $\theta_2$ MAE (°) | $\theta_3$ MAE (°) | Mean angle MAE (°) | Elbow selection accuracy | Pose error, mean (mm) | Pose error, median (mm) | Pose error, p95 (mm) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | v0 — buggy backward pass ($dA^{[L]}$ double-divided by $m$, §3.5 note) | 3 | 15,000 | 3.450 | 106.9 | 83.1 | 60.9 | 83.6 | n/a | 3230.0 | 3241.6 | 4403.1 |
 | v1 — raw angles, bug fixed | 3 | 15,000 | 0.493 | 15.27 | 12.41 | 41.01 | 22.90 | n/a | 527.96 | 445.71 | 1075.65 |
-| v2 — sin/cos encoding for $\theta_1$ | 3 | 30,000 | 0.470 | **1.59** | 12.39 | 40.81 | 18.26 | n/a | 193.88 | 178.84 | 380.07 |
-| v3 — `elbow_config` input (§3.9), best-of-2 at inference | 4 | 30,000 | **0.059** | 1.69 | 13.41 | 41.14 | 18.75 | **59.0%** | **101.64** | 95.55 | 185.07 |
+| v2 — sin/cos encoding for $\theta_1$ | 3 | 30,000 | 0.470 | 1.59 | 12.39 | 40.81 | 18.26 | n/a | 193.88 | 178.84 | 380.07 |
+| v3 — `elbow_config` input (§3.9), best-of-2 at inference | 4 | 30,000 | 0.059 | 1.69 | 13.41 | 41.14 | 18.75 | 59.0% | 101.64 | 95.55 | 185.07 |
+| v4 — increased capacity (`[4,256,128,64,4]`), still full-batch GD, 3000 iterations | 4 | 30,000 | 0.040 | 1.29 | 14.78 | 45.73 | 20.60 | 56.2% | 74.08 | 68.65 | 140.34 |
+| v5 — mini-batch GD (§3.10), batch size 256, 100 epochs, same architecture as v4 | 4 | 30,000 | **0.012** | **0.97** | **12.33** | **38.24** | **17.18** | 57.0% | **48.89** | **46.29** | **88.95** |
 
 *(Test-set numbers shown; dev-set numbers track within ~1% of test throughout, so the model is not overfitting at this scale.)*
 
@@ -199,6 +217,10 @@ Architecture: `[n_in, 64, 64, 4]`, ReLU hidden / linear output, $\alpha=0.05$, 3
 **Interpretation (v2→v3) — an important, non-obvious result:** training cost dropped almost 10x (0.470 → 0.059), confirming the oracle-conditioned mapping $(x,y,z,\text{elbow\_config})\to\theta$ is learned very well. Yet $\theta_2$/$\theta_3$ MAE against the *test-set labels* barely moved, while pose error nearly halved (193.9mm → 101.6mm). The elbow-selection accuracy (59.0%, barely above the 50% chance floor) explains why: once the network has learned **both** branch functions accurately, querying it with *either* `elbow_config` value for the same $(x,y,z)$ tends to reproject close to the target for **both** candidates, because both are genuinely valid IK solutions — not because the model is confused. The "pick smaller reprojection error" rule therefore can't reliably discriminate between them, and roughly 40% of the time lands on the branch that isn't the one the test label happened to be sampled from, which is scored as "wrong" against that single label even though it's a physically valid alternate solution.
 
 This is direct, controlled evidence for the concern raised in §6.4 below: a meaningful fraction of "branch confusion" error against a single sampled label is a **metric-framing artifact**, not a modeling defect — the near-halved pose error shows the model is finding *a* valid solution far more often, even though it doesn't reliably reproduce the *specific* one a fixed test label happened to record. This has a real thesis-framing implication: for a problem that is intrinsically one-to-many, angle-MAE against one sampled label may not be the most meaningful accuracy metric; pose error against the requested target is arguably closer to what the thesis's actual requirement (end-effector accuracy) is asking for.
+
+**Caveat (v3→v4):** the capacity increase from `[4,64,64,4]` to `[4,256,128,64,4]` was made outside a tracked planning discussion (found already applied when this project was revisited); it is logged here for completeness rather than as a deliberate ablation. Its effect is nonetheless clear and directionally sensible: cost fell further (0.059 → 0.040) and pose error dropped substantially (101.64mm → 74.08mm), while angle-MAE and elbow-selection accuracy stayed roughly flat — consistent with the extra capacity mainly buying a lower general precision ceiling (§4.1), not resolving the branch-selection near-chance behavior, which is a metric-framing effect (see above) rather than a capacity limitation.
+
+**Interpretation (v4→v5) — mini-batch GD, isolated from the capacity change:** with architecture held fixed at `[4,256,128,64,4]`, switching only the training loop from full-batch (3000 iterations) to mini-batch (§3.10, batch size 256, 100 epochs) improved every accuracy metric simultaneously: cost 0.040 → 0.012, mean angle MAE 20.60° → 17.18°, pose error mean 74.08mm → 48.89mm — while also finishing in **65.6 seconds**, versus a full-batch run that (while not directly timed) took long enough in this session to repeatedly require polling for completion. This is a cleaner comparison than v1→v2 or v3→v4 above (only one thing changed), and confirms the mechanism predicted in §3.10: mini-batching doesn't reduce the arithmetic per epoch, but the ~94x more frequent parameter updates per epoch let it reach a lower cost in far fewer epochs (100) than full-batch needed iterations (3000), which is why it is both faster *and* more accurate here rather than trading one for the other. Elbow-selection accuracy stayed flat (56.2% → 57.0%, still near the 50% chance floor) — expected, since that's the same metric-framing effect from v2→v3 above, not something training speed or convergence quality addresses.
 
 ### 4.1 Diagnostic: is v3's remaining pose error singularity-driven?
 
@@ -218,6 +240,8 @@ Since the thesis's primary accuracy criterion is end-effector (pose) error, it m
 **Branch-selection side-finding:** selection accuracy drops near the elbow singularity (branches nearly coincide at $\theta_3=0$, so telling them apart by reprojection distance approaches a coin flip) and rises sharply near the base singularity (a more complex effect, not fully explained here — the FK formula's $r$ can go slightly negative, creating a second redundancy involving $\theta_1$ that appears to make the two elbow candidates more distinguishable there). Not the primary finding, but worth a footnote if branch-selection mechanics are discussed.
 
 **Implication:** the remaining ~100mm looks like a **general regression precision ceiling** (plain gradient descent, 3000 iterations, 64-64 hidden units, no momentum/Adam — still gently decreasing at the end of training) rather than a structural singularity problem. This re-prioritizes next steps: training improvements (optimizer, iteration budget, capacity) are likely higher-leverage for reducing pose error than singularity-targeted oversampling, at least at the current model scale.
+
+**Re-run on v5 (mini-batch GD, §3.10):** the same diagnostic was re-run after v5's training-speed/quality improvements (§4). Conclusion unchanged — correlations stayed weak ($\text{corr}(e_{\text{pose}}, |\sin\theta_3|) = 0.018$, $\text{corr}(e_{\text{pose}}, r) = 0.026$), and pose error near vs. elsewhere for both singularities stayed within a few mm of each other. This confirms v4→v5's ~26mm pose-error improvement (§4) came from better general convergence, not from incidentally fixing a singularity-related weakness.
 
 ---
 
@@ -309,3 +333,7 @@ with $\lambda_{\text{FK}} = 0.1$ in the current configuration ($K=8$ components,
 - Created `QUESTIONS.md` (conceptual Q&A log) and `.claude/skills/thesis_check/SKILL.md` (project do's/don'ts checklist).
 - Added `elbow_config` oracle input + best-of-2 inference to Model A (§3.9 v3), to remove the theta2/theta3 branch ambiguity (§1.2). Training cost dropped ~10x (0.470 → 0.059); pose error nearly halved (193.9mm → 101.6mm); but angle-MAE against the sampled label barely moved and best-of-2 branch-selection accuracy was only 59% (near chance) — strong evidence that a meaningful share of "branch confusion" is a metric-framing artifact (the model finding a *different but equally valid* solution), not a pure error. See §4 and §6 items 4/6/7 for the full interpretation and its implications for Model B and for the thesis's choice of accuracy metric.
 - Ran a singularity diagnostic on v3's remaining pose error (§4.1), since the thesis prioritizes end-effector accuracy: found neither the elbow (`theta3≈0`) nor base (`r≈0`) singularity drives it (weak correlations, worst-error decile not concentrated near either) — pose error is actually slightly *lower* near the elbow singularity, explained by the Jacobian-rank-loss direction being where angle changes barely move the end-effector. Concluded the remaining ~100mm is a general precision ceiling (plain GD, 3000 iterations, no optimizer) rather than a singularity problem — re-prioritizes next steps toward training improvements over singularity-targeted oversampling.
+
+### 08-08-26: Saturday
+- Logged v4 (§4): a capacity increase to `[4,256,128,64,4]` found already applied to the notebook (made outside a tracked session) — cost 0.059→0.040, pose error 101.64mm→74.08mm, angle-MAE/selection accuracy roughly flat.
+- Added mini-batch gradient descent to Model A (§3.10, `random_mini_batches` + epoch loop, mirroring the Andrew Ng Course 2 convention), keeping the full-batch path available via `batch_size=None` for comparison. Logged as **v5** (§4): with architecture held fixed at v4's, switching to mini-batch GD (batch size 256, 100 epochs) improved cost (0.040→0.012), mean angle MAE (20.60°→17.18°), and pose error (74.08mm→48.89mm) simultaneously, finishing in 65.6 seconds — the cleanest single-variable comparison in the table so far (§4 interpretation). Re-ran the singularity diagnostic (§4.1) on v5: conclusion unchanged, the improvement is general convergence quality, not a singularity effect. Answers the session's motivating question ("this notebook is very slow, how do I make it fast") — logged as QUESTIONS.md Q5.

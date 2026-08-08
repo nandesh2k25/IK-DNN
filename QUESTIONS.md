@@ -21,3 +21,11 @@ A running log of conceptual/technical questions asked during this project, with 
 **Q4.** For the `elbow_config` input, would it make a difference to encode it as `-1`/`+1` vs `0`/`1`?
 
 **A:** Not much — the network learns either way. The only real difference is minor training smoothness: `-1`/`+1` is zero-centered (symmetric), matching how the other inputs are already set up, which tends to make training slightly more even; `0`/`1` isn't centered, so one of the two configs looks like "nothing extra" to that input's weight, making it marginally harder to weigh evenly. It doesn't change whether the approach works, just training quality at the margins. Went with `-1`/`+1` for consistency with the rest of the notebook's conventions.
+
+---
+
+## 08-08-26: Saturday
+
+**Q5.** This notebook is very slow currently, how do I make it fast?
+
+**A:** The slowness was the training cell itself — full-batch gradient descent over all 24,000 training examples through a `[4,256,128,64,4]` network, repeated 3000 times, meant every single iteration was one large matmul over the whole dataset. Fix (v5): switch to mini-batch gradient descent (batch size 256, via a new `random_mini_batches` helper mirroring the Andrew Ng Course 2 convention) — parameters now update ~94 times per epoch instead of once. Important nuance: this doesn't reduce the total arithmetic per epoch (an epoch of mini-batches still touches all 24,000 examples), the speedup comes from converging in far fewer epochs than 3000. In practice: 100 epochs finished in 65.6s and reached a lower cost (0.0116) and better test pose error (48.89mm) than the old full-batch run achieved in 3000 iterations (cost 0.040, pose error 74.08mm) — both faster and more accurate.
