@@ -6,7 +6,24 @@ A cached index of this Colab notebook's cells, so edits can target a cell by ID 
 
 **Keep this in sync:** update the relevant row(s) immediately after any `update_cell`/`add_code_cell`/`add_text_cell`/`delete_cell`/`move_cell` call, in the same turn as the edit. See `.claude/skills/notebook_map/SKILL.md`. If the user edits the notebook directly in the browser, they'll say so and this file needs a manual re-sync (re-fetch full notebook, rewrite this table).
 
-**Last full sync:** 2026-08-08, after the v5 mini-batch + training-log instrumentation work (commit `fd2f214` on branch `improve-code`).
+**⚠️ The committed `.ipynb` file has one MORE cell than the live notebook.** When Colab saves to GitHub it prepends an "Open In Colab" badge cell to the *committed file only* — it is **not** in the live session. Verified 2026-08-08: live notebook = 29 cells starting at `lIYdn1woOS1n`; committed file = 30 cells starting with the badge. So:
+
+- **The index numbers in the table below refer to the LIVE notebook** (what `get_cells`/`update_cell` see). That's what matters for editing.
+- If you're ever reading the `.ipynb` file on disk instead, **file index = live index + 1**.
+
+Don't "fix" this offset by renumbering the table — the table is correct for the tool you actually edit with.
+
+**Git workflow (as of 2026-08-08):** the notebook is version-controlled at
+`IK_MDN(3R in 3D)_tuned/notebooks/august_thesis_claude.ipynb` on GitHub
+(`nandesh2k25/IK-DNN`, branch `master`). **Colab is the sole writer of this file** —
+the user saves via *File → Save a copy in GitHub*, then it's pulled locally.
+Don't edit the notebook file locally and commit it; that reintroduces the
+divergence this workflow exists to prevent. Note Colab's save dialog wants the
+path *within* the repo — including the repo name or a stray trailing space
+silently creates a duplicate at a new path instead of updating this one (this
+already happened once).
+
+**Last full sync:** 2026-08-08, verified live against Colab after the user's *Save a copy in GitHub* (commit `594870f` on `master`). Live cell IDs and indices unchanged from the previous sync — only the committed file gained the badge cell.
 
 ---
 
@@ -51,4 +68,4 @@ A cached index of this Colab notebook's cells, so edits can target a cell by ID 
 `parameters`, `costs`, `train_time`, `final_cost` — from cell 24's `nn_model` call.
 `VERSION`, `NOTES`, `layer_dims`, `BATCH_SIZE`, `LEARNING_RATE`, `NUM_ITERATIONS` — cell 24's run config (edit these to start a new experiment; bump `VERSION` for a new logged run).
 `dev_pred_theta`/`test_pred_theta`, `*_joint_mae`, `*_pose_err`, `*_config_acc` — from cell 25's `evaluate()` calls.
-`model_a_training_log.csv` — written by cell 25, lives in Colab's ephemeral session (`/content`), not yet committed to the repo.
+`model_a_training_log.csv` — written by cell 25, lives in Colab's ephemeral session (`/content`). **Not in the repo, and it does not survive a runtime restart** — unlike the notebook, saving to GitHub does not carry it along. Currently holds only the v5 row. If the version-to-version comparison history matters, it needs downloading (or writing to mounted Drive) before the runtime recycles.
