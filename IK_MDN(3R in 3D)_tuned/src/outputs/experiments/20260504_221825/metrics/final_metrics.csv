@@ -1,0 +1,2 @@
+best_of_k_angle_mse,best_of_k_angle_rmse,best_of_k_pose_mse,best_of_k_pose_rmse,theta1_mae,theta2_mae,theta3_mae,best_val_loss,best_epoch,total_epochs_trained,early_stopped,timestamp
+0.46241864562034607,0.6800137098767539,0.0007426517549902201,0.027251637657033017,0.018190091475844383,0.2053671032190323,0.6430307626724243,-7.137658903757731,185,200,False,2026-05-04T22:21:05.540589

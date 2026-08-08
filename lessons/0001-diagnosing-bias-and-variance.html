@@ -1,0 +1,141 @@
+<title>Lesson 1: Diagnosing Bias vs Variance</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+
+<h1>Lesson 1: Diagnosing Bias vs Variance</h1>
+<p class="lesson-meta">~12 min &middot; Mission: minimizing error in <code>MDN3R3D</code></p>
+
+<p>
+Every other lesson in this track depends on this one. Before you can decide
+whether to add capacity, add data, or add regularization to your model, you
+need to know <em>which problem you actually have</em>. Guessing wastes runs;
+this lesson gives you a two-number test.
+</p>
+
+<h2>The idea</h2>
+
+<p>
+Your model's error has two independent failure modes:
+</p>
+
+<ul>
+  <li><strong>Bias</strong> &mdash; the model is too simple (or undertrained) to fit even the data it has seen.</li>
+  <li><strong>Variance</strong> &mdash; the model fit the training data too specifically, and doesn't generalize to new points.</li>
+</ul>
+
+<p>
+You can't see either one directly. What you <em>can</em> see is two numbers,
+both already computed by your notebook every time it trains:
+<code>train_loss</code> and <code>val_loss</code> (from <code>train_result["history"]</code>,
+plotted by <code>save_training_plots</code>). Comparing them tells you which
+failure mode you're in.
+</p>
+
+<table>
+  <tr><th>train_loss</th><th>val_loss</th><th>Diagnosis</th></tr>
+  <tr><td>high</td><td>&asymp; train_loss</td><td>High bias (underfitting)</td></tr>
+  <tr><td>low</td><td>&gt;&gt; train_loss</td><td>High variance (overfitting)</td></tr>
+  <tr><td>low</td><td>&asymp; train_loss</td><td>Good fit</td></tr>
+</table>
+
+<p>
+This table &mdash; and the fixes for each row &mdash; are captured in full in the
+<a href="../reference/bias-variance-cheatsheet.html">Bias/Variance Cheat Sheet</a>.
+Keep that open in a tab; you'll come back to it every time you tune a hyperparameter.
+</p>
+
+<div class="callout callout-source">
+  <strong>Primary source:</strong> Andrew Ng, <a href="https://www.coursera.org/learn/deep-neural-network/" target="_blank" rel="noopener">Improving Deep Neural Networks</a>,
+  Week 1 &mdash; the "Basic Recipe for Machine Learning" video lays out exactly this diagnostic flow.
+  Watch it once; this lesson is the applied version for your own model.
+</div>
+
+<h2>Check yourself</h2>
+
+<p>Three scenarios. Classify each one before checking the answer &mdash; guessing after seeing the answer defeats the point.</p>
+
+<div class="quiz" data-answer="a">
+  <div class="quiz-prompt">1. train_loss = 0.85, val_loss = 0.87, both plateaued early and high. What's going on?</div>
+  <label class="quiz-option"><input type="radio" name="q1" value="a"> Underfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="b"> Overfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="c"> Well-Fitted Model</label>
+  <button class="quiz-check" onclick="checkQuiz(this)">Check</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" data-answer="b">
+  <div class="quiz-prompt">2. train_loss = 0.05, val_loss = 0.61, and the gap keeps widening after epoch 40.</div>
+  <label class="quiz-option"><input type="radio" name="q2" value="a"> Underfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q2" value="b"> Overfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q2" value="c"> Well-Fitted Model</label>
+  <button class="quiz-check" onclick="checkQuiz(this)">Check</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" data-answer="c">
+  <div class="quiz-prompt">3. train_loss = 0.09, val_loss = 0.11, both still slowly falling together at the last epoch.</div>
+  <label class="quiz-option"><input type="radio" name="q3" value="a"> Underfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q3" value="b"> Overfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q3" value="c"> Well-Fitted Model</label>
+  <button class="quiz-check" onclick="checkQuiz(this)">Check</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<h3>One that isn't just table lookup</h3>
+
+<div class="quiz" data-answer="b">
+  <div class="quiz-prompt">4. In <code>MDN3R3D</code>, <code>lambda_fk</code> is currently 0.1. If you set it to 5.0 and train_loss on the <em>NLL term</em> stays stubbornly high while <code>fk_loss</code> drops to near zero, what's the most likely cause?</div>
+  <label class="quiz-option"><input type="radio" name="q4" value="a"> Underfitting Model</label>
+  <label class="quiz-option"><input type="radio" name="q4" value="b"> Objective Conflict</label>
+  <label class="quiz-option"><input type="radio" name="q4" value="c"> Overfitting Model</label>
+  <button class="quiz-check" onclick="checkQuiz(this)">Check</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<p class="sidenote">
+Question 4 isn't in the diagnostic table on purpose &mdash; it's testing whether
+you can reason about your own composite loss, not just memorize a row.
+</p>
+
+<h2>Your task</h2>
+
+<div class="callout callout-task">
+  <strong>Run it for real.</strong> Execute the full <code>IK_MDN_3R_3D_Colab.ipynb</code> notebook
+  (Sections 8&ndash;11) if you haven't yet. Then open
+  <code>experiment_dirs["plots"]/training_loss_curve.png</code>, or read the final
+  two rows of <code>experiment_dirs["metrics"]/train_history.csv</code>, and note:
+  <ul>
+    <li>train_loss and val_loss at <code>best_epoch</code></li>
+    <li><code>best_epoch</code> vs <code>total_epochs_trained</code></li>
+  </ul>
+  Bring those four numbers back to your teacher (me). We'll classify your actual
+  run together and pick the specific config change for Lesson 2.
+</div>
+
+<div class="callout callout-ask">
+  <strong>Stuck, or something here doesn't match what you see in your own training run?</strong>
+  Ask your teacher directly &mdash; that's what the next conversation turn is for. Don't
+  sit on a confusing result; bring the exact numbers and we'll work through it.
+</div>
+
+<div class="lesson-nav">
+  <span>&larr; Mission: MISSION.md</span>
+  <span><a href="0002-error-analysis-theta3.html">Lesson 2: Error Analysis — Is theta3's Error One Failure or Two? &rarr;</a></span>
+</div>
+
+<script>
+function checkQuiz(button) {
+  const quiz = button.closest('.quiz');
+  const selected = quiz.querySelector('input[type=radio]:checked');
+  const feedback = quiz.querySelector('.quiz-feedback');
+  if (!selected) {
+    feedback.className = 'quiz-feedback incorrect';
+    feedback.textContent = 'Pick an option first.';
+    return;
+  }
+  const correct = selected.value === quiz.dataset.answer;
+  feedback.className = 'quiz-feedback ' + (correct ? 'correct' : 'incorrect');
+  feedback.textContent = correct
+    ? 'Correct.'
+    : 'Not quite — re-check the numbers against the table above, then try again.';
+}
+</script>

@@ -1,0 +1,14 @@
+{
+    "best_of_k_angle_mse": 0.5090829133987427,
+    "best_of_k_angle_rmse": 0.713500464890348,
+    "best_of_k_pose_mse": 0.0009104916243813932,
+    "best_of_k_pose_rmse": 0.030174353752506336,
+    "theta1_mae": 0.025956474244594574,
+    "theta2_mae": 0.21796579658985138,
+    "theta3_mae": 0.6871025562286377,
+    "best_val_loss": -6.683257216135661,
+    "best_epoch": 137,
+    "total_epochs_trained": 157,
+    "early_stopped": true,
+    "timestamp": "2026-05-04T11:05:05.102315"
+}

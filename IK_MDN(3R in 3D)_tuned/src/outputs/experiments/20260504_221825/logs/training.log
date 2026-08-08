@@ -1,0 +1,114 @@
+2026-05-04 22:18:25,929 | INFO | Experiment directory: outputs\experiments\20260504_221825
+2026-05-04 22:18:25,929 | INFO | Using device: cpu
+2026-05-04 22:18:25,930 | INFO | Saved config.
+2026-05-04 22:18:25,947 | INFO | Saved raw dataset.
+2026-05-04 22:18:25,980 | INFO | Saved processed dataset.
+2026-05-04 22:18:28,644 | INFO | Epoch 1/200, Train Loss: 2.775120, Val Loss: 1.099683
+2026-05-04 22:18:28,661 | INFO | Validation improved to 1.099683 at epoch 1.
+2026-05-04 22:18:28,661 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:29,146 | INFO | Validation improved to 0.270008 at epoch 2.
+2026-05-04 22:18:29,146 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:29,623 | INFO | Validation improved to 0.212741 at epoch 3.
+2026-05-04 22:18:29,623 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:30,169 | INFO | Validation improved to -0.246998 at epoch 4.
+2026-05-04 22:18:30,169 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:30,703 | INFO | Validation improved to -0.523402 at epoch 5.
+2026-05-04 22:18:30,703 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:34,688 | INFO | Validation improved to -0.584017 at epoch 8.
+2026-05-04 22:18:34,688 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:35,307 | INFO | Validation improved to -1.092777 at epoch 9.
+2026-05-04 22:18:35,307 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:35,827 | INFO | Epoch 10/200, Train Loss: -0.939875, Val Loss: -0.781538
+2026-05-04 22:18:40,680 | INFO | Validation improved to -1.246616 at epoch 15.
+2026-05-04 22:18:40,680 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:45,118 | INFO | Validation improved to -1.642115 at epoch 19.
+2026-05-04 22:18:45,118 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:46,193 | INFO | Epoch 20/200, Train Loss: -1.636110, Val Loss: -0.913173
+2026-05-04 22:18:51,968 | INFO | Validation improved to -1.895287 at epoch 25.
+2026-05-04 22:18:51,968 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:18:55,360 | INFO | Epoch 30/200, Train Loss: -1.436415, Val Loss: -1.728867
+2026-05-04 22:19:04,144 | INFO | Validation improved to -2.227076 at epoch 39.
+2026-05-04 22:19:04,144 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:04,950 | INFO | Epoch 40/200, Train Loss: -1.628635, Val Loss: -1.704743
+2026-05-04 22:19:09,041 | INFO | Validation improved to -2.305276 at epoch 45.
+2026-05-04 22:19:09,041 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:13,148 | INFO | Epoch 50/200, Train Loss: -2.260958, Val Loss: -2.018501
+2026-05-04 22:19:18,156 | INFO | Validation improved to -2.437779 at epoch 55.
+2026-05-04 22:19:18,157 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:20,267 | INFO | Validation improved to -2.453623 at epoch 57.
+2026-05-04 22:19:20,267 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:22,729 | INFO | Epoch 60/200, Train Loss: -2.272724, Val Loss: -2.060344
+2026-05-04 22:19:24,957 | INFO | Validation improved to -2.573103 at epoch 63.
+2026-05-04 22:19:24,957 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:25,720 | INFO | Validation improved to -2.845045 at epoch 64.
+2026-05-04 22:19:25,721 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:30,634 | INFO | Epoch 70/200, Train Loss: -2.878633, Val Loss: -2.340914
+2026-05-04 22:19:32,878 | INFO | Validation improved to -3.096784 at epoch 72.
+2026-05-04 22:19:32,879 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:34,831 | INFO | Validation improved to -3.591580 at epoch 74.
+2026-05-04 22:19:34,832 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:35,545 | INFO | Validation improved to -3.695915 at epoch 75.
+2026-05-04 22:19:35,545 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:36,726 | INFO | Validation improved to -3.889292 at epoch 77.
+2026-05-04 22:19:36,727 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:38,521 | INFO | Epoch 80/200, Train Loss: -3.669206, Val Loss: -3.116971
+2026-05-04 22:19:39,804 | INFO | Validation improved to -4.044727 at epoch 82.
+2026-05-04 22:19:39,804 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:40,543 | INFO | Validation improved to -4.135197 at epoch 83.
+2026-05-04 22:19:40,544 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:43,565 | INFO | Validation improved to -4.334547 at epoch 87.
+2026-05-04 22:19:43,566 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:45,272 | INFO | Validation improved to -4.547361 at epoch 89.
+2026-05-04 22:19:45,272 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:46,162 | INFO | Epoch 90/200, Train Loss: -4.470280, Val Loss: -3.821415
+2026-05-04 22:19:49,825 | INFO | Validation improved to -4.750436 at epoch 93.
+2026-05-04 22:19:49,825 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:51,463 | INFO | Validation improved to -5.122772 at epoch 95.
+2026-05-04 22:19:51,464 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:54,553 | INFO | Epoch 100/200, Train Loss: -4.809902, Val Loss: -4.571105
+2026-05-04 22:19:55,903 | INFO | Validation improved to -5.128118 at epoch 102.
+2026-05-04 22:19:55,904 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:19:57,694 | INFO | Validation improved to -5.215384 at epoch 105.
+2026-05-04 22:19:57,694 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:01,003 | INFO | Epoch 110/200, Train Loss: -5.373125, Val Loss: -5.626101
+2026-05-04 22:20:01,013 | INFO | Validation improved to -5.626101 at epoch 110.
+2026-05-04 22:20:01,013 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:03,849 | INFO | Validation improved to -5.661742 at epoch 113.
+2026-05-04 22:20:03,849 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:04,526 | INFO | Validation improved to -5.771190 at epoch 114.
+2026-05-04 22:20:04,526 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:08,406 | INFO | Epoch 120/200, Train Loss: -5.507092, Val Loss: -4.865253
+2026-05-04 22:20:11,124 | INFO | Validation improved to -6.098875 at epoch 124.
+2026-05-04 22:20:11,124 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:14,697 | INFO | Epoch 130/200, Train Loss: -6.000773, Val Loss: -5.383241
+2026-05-04 22:20:15,399 | INFO | Validation improved to -6.266903 at epoch 131.
+2026-05-04 22:20:15,399 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:21,893 | INFO | Epoch 140/200, Train Loss: -5.747500, Val Loss: -5.494729
+2026-05-04 22:20:27,277 | INFO | Validation improved to -6.453111 at epoch 149.
+2026-05-04 22:20:27,277 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:27,907 | INFO | Epoch 150/200, Train Loss: -6.273331, Val Loss: -5.586589
+2026-05-04 22:20:29,770 | INFO | Validation improved to -6.542899 at epoch 153.
+2026-05-04 22:20:29,771 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:34,828 | INFO | Epoch 160/200, Train Loss: -6.301338, Val Loss: -4.592554
+2026-05-04 22:20:35,454 | INFO | Validation improved to -6.683570 at epoch 161.
+2026-05-04 22:20:35,455 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:41,223 | INFO | Epoch 170/200, Train Loss: -6.177849, Val Loss: -5.667549
+2026-05-04 22:20:46,786 | INFO | Validation improved to -6.837851 at epoch 177.
+2026-05-04 22:20:46,786 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:50,207 | INFO | Epoch 180/200, Train Loss: -6.628532, Val Loss: -6.644100
+2026-05-04 22:20:54,044 | INFO | Validation improved to -7.137659 at epoch 185.
+2026-05-04 22:20:54,044 | INFO | Saved best model to outputs\experiments\20260504_221825\models\best_model.pt.
+2026-05-04 22:20:57,676 | INFO | Epoch 190/200, Train Loss: -6.826791, Val Loss: -6.851443
+2026-05-04 22:21:05,424 | INFO | Epoch 200/200, Train Loss: -6.940074, Val Loss: -6.752547
+2026-05-04 22:21:05,434 | INFO | Saved final model to outputs\experiments\20260504_221825\models\final_model.pt.
+2026-05-04 22:21:05,499 | INFO | Saved training history JSON and CSV.
+2026-05-04 22:21:05,506 | INFO | Loaded best model for final evaluation.
+2026-05-04 22:21:05,546 | INFO | Test best-of-K angle MSE: 0.462419
+2026-05-04 22:21:05,546 | INFO | Test best-of-K pose MSE: 0.000743
+2026-05-04 22:21:05,629 | INFO | Saved test predictions and CSV tables.
+2026-05-04 22:21:08,574 | INFO | Saved thesis verification plots.
+2026-05-04 22:21:08,575 | INFO | Running unseen-data experiment with 1000 samples.
+2026-05-04 22:21:10,220 | INFO | Saved unseen-data dataset, predictions, metrics, tables, and plots.
+2026-05-04 22:21:10,220 | INFO | Unseen best-of-K angle MSE: 0.418228
+2026-05-04 22:21:10,220 | INFO | Unseen best-of-K pose MSE: 0.000579
+2026-05-04 22:21:10,220 | INFO | Pipeline complete.

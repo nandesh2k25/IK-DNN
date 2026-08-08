@@ -1,0 +1,35 @@
+{
+    "project_name": "ik_mdn_3r_3d",
+    "n_samples": 15000,
+    "batch_size": 256,
+    "max_epochs": 200,
+    "patience": 20,
+    "min_delta": 1e-05,
+    "learning_rate": 0.0005,
+    "lambda_fk": 0.1,
+    "n_components": 8,
+    "hidden_size": 256,
+    "train_fraction": 0.8,
+    "val_fraction": 0.1,
+    "test_fraction": 0.1,
+    "dataset_seed": 42,
+    "split_seed": 0,
+    "unseen_seed": 999,
+    "robot_params": {
+        "L1": 1.0,
+        "L2": 1.0,
+        "L3": 0.5,
+        "theta1_lim": [
+            -3.141592653589793,
+            3.141592653589793
+        ],
+        "theta2_lim": [
+            -1.5707963267948966,
+            1.5707963267948966
+        ],
+        "theta3_lim": [
+            -1.5707963267948966,
+            1.5707963267948966
+        ]
+    }
+}
