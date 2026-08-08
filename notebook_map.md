@@ -6,7 +6,7 @@ A cached index of this Colab notebook's cells, so edits can target a cell by ID 
 
 **Keep this in sync:** update the relevant row(s) immediately after any `update_cell`/`add_code_cell`/`add_text_cell`/`delete_cell`/`move_cell` call, in the same turn as the edit. See `.claude/skills/notebook_map/SKILL.md`. If the user edits the notebook directly in the browser, they'll say so and this file needs a manual re-sync (re-fetch full notebook, rewrite this table).
 
-**⚠️ The committed `.ipynb` file has one MORE cell than the live notebook.** When Colab saves to GitHub it prepends an "Open In Colab" badge cell to the *committed file only* — it is **not** in the live session. Verified 2026-08-08: live notebook = 29 cells starting at `lIYdn1woOS1n`; committed file = 30 cells starting with the badge. So:
+**⚠️ The committed `.ipynb` file has one MORE cell than the live notebook.** When Colab saves to GitHub it prepends an "Open In Colab" badge cell to the *committed file only* — it is **not** in the live session. Verified 2026-08-08: live notebook = 33 cells starting at `lIYdn1woOS1n`; committed file gains the badge at the front. So:
 
 - **The index numbers in the table below refer to the LIVE notebook** (what `get_cells`/`update_cell` see). That's what matters for editing.
 - If you're ever reading the `.ipynb` file on disk instead, **file index = live index + 1**.
@@ -23,7 +23,7 @@ path *within* the repo — including the repo name or a stray trailing space
 silently creates a duplicate at a new path instead of updating this one (this
 already happened once).
 
-**Last full sync:** 2026-08-08, verified live against Colab after the user's *Save a copy in GitHub* (commit `594870f` on `master`). Live cell IDs and indices unchanged from the previous sync — only the committed file gained the badge cell.
+**Last full sync:** 2026-08-08, after adding the v6 Adam optimizer. **Four cells were inserted**, shifting every index from 21 onward: `lozV7gLneGX7`/`TFeZsHyxeMlU` (§3.7 Adam) at 21–22, and `Od3DQJzrfqVE`/`Q_qHfieOfvY3` (§4.2 LR sweep) at 28–29. Live notebook is now 33 cells.
 
 ---
 
@@ -32,7 +32,7 @@ already happened once).
 | # | Cell ID | Type | Section | Summary |
 |---|---|---|---|---|
 | 0 | `lIYdn1woOS1n` | code | — | Imports: `time`, `numpy as np`, `matplotlib.pyplot as plt` |
-| 1 | `QlmXjFurKqHB` | markdown | Title | Notebook overview, current-state roadmap bullets (v3 elbow_config, v5 mini-batch) |
+| 1 | `QlmXjFurKqHB` | markdown | Title | Notebook overview, current-state roadmap bullets (v3 elbow_config, v5 mini-batch, v6 Adam) |
 | 2 | `S3_6o4eiKxOs` | markdown | 1. Data Generation | FK equations (r, z, x, y) |
 | 3 | `Tmq9n1WQbmGw` | markdown | 1. Data Generation | Angle encoding: sin/cos for theta1 rationale |
 | 4 | `F0VoUj8mv6WM` | markdown | 1. Data Generation | Elbow Configuration Input (v3) rationale |
@@ -48,24 +48,31 @@ already happened once).
 | 14 | `B86mTo8eLEiu` | code | 3.3 | `compute_cost` + sanity check |
 | 15 | `Y31iTFfnLFvb` | markdown | 3.4 | Backward prop rationale, `dAL` bug note |
 | 16 | `KdMjmVOjLHnq` | code | 3.4 | `linear_activation_backward`, `backward_propagation` + sanity check |
-| 17 | `Jv4zNPH2LIwM` | markdown | 3.5 | Update parameters rationale (plain GD) |
-| 18 | `kaBeI0RlLKae` | code | 3.5 | `update_parameters` |
+| 17 | `Jv4zNPH2LIwM` | markdown | 3.5 | Update parameters rationale (plain GD); points forward to 3.7 for Adam |
+| 18 | `kaBeI0RlLKae` | code | 3.5 | `update_parameters` — plain GD, deliberately untouched by v6 |
 | 19 | `FW2XHbjDBBW_` | markdown | 3.6 | Mini-batch GD rationale (v5) |
 | 20 | `s4BUtqqiBDb3` | code | 3.6 | `random_mini_batches` + sanity check |
-| 21 | `BbN5bi1QLL9H` | markdown | 3.7 | `nn_model` docs — full-batch vs mini-batch modes |
-| 22 | `sN2abBUaLNT8` | code | 3.7 | `nn_model` — trains, times itself internally, returns `(parameters, costs, train_time, final_cost)` |
-| 23 | `rjaj4jROLOu0` | markdown | 4. Analysis | Section intro; mentions built-in timer + `model_a_training_log.csv` |
-| 24 | `4-ONOXF2LQjR` | code | 4. Analysis | Training cell: `VERSION`/`NOTES`/`layer_dims`/`BATCH_SIZE`/`LEARNING_RATE`/`NUM_ITERATIONS`, calls `nn_model`, plots cost curve |
-| 25 | `-xmJjm1oLSrj` | code | 4. Analysis | `predict_ik`, `evaluate` (returns `config_accuracy` too), `log_run_metrics`, calls both + logs the run to `model_a_training_log.csv` |
-| 26 | `e7qfFh-89CiB` | markdown | 5. Diagnostic | Singularity-vs-precision-ceiling intro |
-| 27 | `qq7hQwgaLUau` | code | 5. Diagnostic | Scatter plot: predicted vs. true angle, per joint |
-| 28 | `5aBqP7IEd_VH` | code | 5. Diagnostic | Singularity proximity correlations, worst-decile stratification, branch-selection accuracy near each singularity |
+| 21 | `lozV7gLneGX7` | markdown | 3.7 | **(v6)** Adam rationale: momentum + RMSprop + bias correction; the `t`-counts-updates and lr-doesn't-carry-over warnings |
+| 22 | `TFeZsHyxeMlU` | code | 3.7 | **(v6)** `initialize_adam`, `update_parameters_with_adam` + sanity checks (β₁=β₂=0 reduces to a signed step; bias-corrected first step is lr-sized) |
+| 23 | `BbN5bi1QLL9H` | markdown | 3.8 | `nn_model` docs — batching mode × optimizer mode, and the shared `_step` helper |
+| 24 | `sN2abBUaLNT8` | code | 3.8 | `nn_model` — takes `optimizer`/`beta1`/`beta2`/`epsilon`; inner `_step` owns the global update counter `t`; returns `(parameters, costs, train_time, final_cost)` |
+| 25 | `rjaj4jROLOu0` | markdown | 4. Analysis | Section intro; mentions built-in timer + `model_a_training_log.csv` |
+| 26 | `4-ONOXF2LQjR` | code | 4. Analysis | Training cell: `VERSION`/`NOTES`/`layer_dims`/`BATCH_SIZE`/`NUM_ITERATIONS`/`OPTIMIZER`/`LEARNING_RATE`/`BETA1`/`BETA2`/`EPSILON`, calls `nn_model`, plots cost curve |
+| 27 | `-xmJjm1oLSrj` | code | 4. Analysis | `predict_ik`, `evaluate` (returns `config_accuracy` too), `log_run_metrics` (now logs optimizer/betas/epsilon, archives the CSV on schema change, NaN-tolerant rounding), calls both |
+| 28 | `Od3DQJzrfqVE` | markdown | 4.2 | **(v6)** Why the LR sweep exists — α isn't comparable across optimizers |
+| 29 | `Q_qHfieOfvY3` | code | 4.2 | **(v6)** Sweep over `SWEEP_CONFIGS` (gd@0.05 as v5-repro + Adam at 3e-4/1e-3/3e-3/1e-2); logs each, survives divergence, prints ranked summary. Does **not** overwrite `parameters` |
+| 30 | `e7qfFh-89CiB` | markdown | 5. Diagnostic | Singularity-vs-precision-ceiling intro |
+| 31 | `qq7hQwgaLUau` | code | 5. Diagnostic | Scatter plot: predicted vs. true angle, per joint |
+| 32 | `5aBqP7IEd_VH` | code | 5. Diagnostic | Singularity proximity correlations, worst-decile stratification, branch-selection accuracy near each singularity |
 
 ---
 
 ## Current key variables (after running top to bottom)
 
-`parameters`, `costs`, `train_time`, `final_cost` — from cell 24's `nn_model` call.
-`VERSION`, `NOTES`, `layer_dims`, `BATCH_SIZE`, `LEARNING_RATE`, `NUM_ITERATIONS` — cell 24's run config (edit these to start a new experiment; bump `VERSION` for a new logged run).
-`dev_pred_theta`/`test_pred_theta`, `*_joint_mae`, `*_pose_err`, `*_config_acc` — from cell 25's `evaluate()` calls.
-`model_a_training_log.csv` — written by cell 25, lives in Colab's ephemeral session (`/content`). **Not in the repo, and it does not survive a runtime restart** — unlike the notebook, saving to GitHub does not carry it along. Currently holds only the v5 row. If the version-to-version comparison history matters, it needs downloading (or writing to mounted Drive) before the runtime recycles.
+`parameters`, `costs`, `train_time`, `final_cost` — from cell 26's `nn_model` call.
+`VERSION`, `NOTES`, `layer_dims`, `BATCH_SIZE`, `NUM_ITERATIONS`, `OPTIMIZER`, `LEARNING_RATE`, `BETA1`, `BETA2`, `EPSILON` — cell 26's run config (edit these to start a new experiment; bump `VERSION` for a new logged run).
+`dev_pred_theta`/`test_pred_theta`, `*_joint_mae`, `*_pose_err`, `*_config_acc` — from cell 27's `evaluate()` calls.
+`sweep_results` — from cell 29; a list of `(tag, optimizer, lr, cost, angle_mae, pose_mm, elbow_acc, seconds)`. Cell 29 uses `_`-prefixed locals throughout specifically so it does **not** clobber the canonical run's globals.
+`model_a_training_log.csv` — written by cells 27 and 29, lives in Colab's ephemeral session (`/content`). **Not in the repo, and it does not survive a runtime restart** — unlike the notebook, saving to GitHub does not carry it along. The v5 row from the previous session was already lost this way. Currently holds 6 rows (`v5-repro`, `v6-lr3e-04`, `v6-lr1e-03`, `v6-lr3e-03`, `v6-lr1e-02`, `v6`). If the version-to-version comparison history matters, it needs downloading (or writing to mounted Drive) before the runtime recycles.
+
+Note the log's schema changed in v6 (added `optimizer`, `beta1`, `beta2`, `epsilon`). `log_run_metrics` compares the existing header against its field list and renames the old file to `model_a_training_log_schema_<timestamp>.csv` on a mismatch rather than appending misaligned rows — so a stale log won't silently corrupt a new one.

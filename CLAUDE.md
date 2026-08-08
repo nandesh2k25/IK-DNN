@@ -56,6 +56,18 @@ training (smoothly decreasing loss) but was actually barely moving from
 random init. If a "from scratch" NN in this repo trains suspiciously slowly
 or converges worse than a constant-mean predictor, check this first.
 
+## Second gotcha of the same class — Adam's `t` counts updates, not epochs
+`update_parameters_with_adam`'s bias correction divides by `1 - beta**t`, so
+`t` must be the **global parameter-update counter**, incremented once per
+mini-batch. Under mini-batching (batch 256 over 24,000 examples) that is 94
+increments per epoch — passing the epoch index instead leaves the correction
+wrong by that factor for the whole run. Like the `dAL` bug above, this trains
+*smoothly* while being wrong. `nn_model` owns `t` inside its `_step` helper and
+prints the final count; a 100-epoch run must report **9,400 parameter updates**.
+Also note Adam's learning rate is not comparable to plain GD's (its step is
+magnitude-normalized to roughly ±α per parameter) — don't carry α across
+optimizers; see `thesis_doc.md` §3.11/§4.2.
+
 ## Where to look for more
 - `handoff.md` — detailed session handoff: architecture history, the
   notebook-corruption-and-rebuild incident (avoid incremental `NotebookEdit`

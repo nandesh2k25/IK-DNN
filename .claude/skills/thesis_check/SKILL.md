@@ -22,7 +22,8 @@ A running checklist of behavioral rules the user has explicitly given for this p
 These are the standing constraints for the pure-NumPy "build it from scratch" notebook work (as opposed to the main PyTorch MDN notebook):
 - **Pure NumPy, manual backprop** — no autograd, no PyTorch, for this track.
 - **No mixture density network** — single deterministic output head, until the user asks to add one.
-- **No optimizer beyond plain gradient descent** — no Adam/momentum yet. Get a simple, correct baseline working first; optimize later only when asked.
+- ~~**No optimizer beyond plain gradient descent** — no Adam/momentum yet. Get a simple, correct baseline working first; optimize later only when asked.~~ **Lifted 08-08-26**, when the user asked to plan Adam. The intent was satisfied as written: the plain baseline was verified correct first (the `dAL` bug was found and fixed under it), and only then was Adam added. Note how it was added, since the *spirit* of this rule still applies to future additions — plain GD stayed the default (`optimizer="gd"`), `update_parameters` was left untouched, and a `v5-repro` regression run confirmed the earlier path still reproduces exactly. **Still not done, and still requiring the user to ask first: learning-rate decay** (deliberately excluded from v6 to keep the comparison single-variable).
+- **Keep each version single-variable where possible.** The user chose "Adam only, everything else pinned to v5" over bundling learning-rate decay in, and chose a logged LR sweep over a single run, specifically so the results table wouldn't gain another "two things changed at once" caveat like the ones already on v1→v2 and v3→v4. Default to isolating one change per logged version.
 
 ## Colab workflow
 
