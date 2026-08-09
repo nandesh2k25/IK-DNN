@@ -68,6 +68,21 @@ Also note Adam's learning rate is not comparable to plain GD's (its step is
 magnitude-normalized to roughly ±α per parameter) — don't carry α across
 optimizers; see `thesis_doc.md` §3.11/§4.2.
 
+## Third gotcha of the same class — learning-rate decay indexes epoch, not Adam's `t`
+Decay (`update_lr`/`schedule_lr_decay`, v7) recomputes α once per **epoch**;
+Adam's bias correction uses `t`, the global **parameter-update counter**. Both
+counters are live in the same training loop and are trivially swappable —
+passing `t` into a decay schedule instead of the epoch index decays α roughly
+94x too fast at batch 256/24,000 examples (t reaches ~9,400 over 100 epochs vs.
+99 epochs), collapsing the effective step to near zero almost immediately.
+Like the two bugs above, this still produces a smooth, plausible-looking loss
+curve. `nn_model`'s final print line reports α₀ -> α_final so this is checkable
+at a glance; see `thesis_doc.md` §3.12. Separately, note that in the v7 sweep
+**every decay rate tested made pose error worse**, not better — this is not a
+bug, just a real (and reported) result: v6's α₀ was already the smallest value
+in the §4.2 sweep and not in the "bouncing near the minimum" regime decay helps
+with, see `thesis_doc.md` §4.3 for the mechanism.
+
 ## Where to look for more
 - `handoff.md` — detailed session handoff: architecture history, the
   notebook-corruption-and-rebuild incident (avoid incremental `NotebookEdit`

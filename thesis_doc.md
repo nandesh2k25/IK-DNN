@@ -201,6 +201,22 @@ $$
 
 **Consequence for the learning rate (important for reading the results table):** because the step is divided by $\sqrt{\hat{s}}$, its magnitude is approximately $\pm\alpha$ per parameter *regardless of gradient scale*. $\alpha$ therefore does **not** carry the same meaning across optimizers, and v5's $\alpha=0.05$ is far too large for Adam. This is why v6 is reported alongside a learning-rate sweep (§4.2) rather than at a single inherited $\alpha$.
 
+### 3.12 Learning-Rate Decay (v7)
+
+Adam (§3.11) adapts the step **per parameter**, rescaling each weight's update by its own recent gradient history — but the base learning rate $\alpha$ passed in still sets the overall scale of every step for the entire run. Learning-rate decay addresses the orthogonal axis: shrinking that **global** scale over time. The two are routinely combined (this is what PyTorch's `Adam` + an `LRScheduler` does).
+
+Motivation, specific to mini-batch training (§3.10): each mini-batch gradient is a *noisy* estimate of the true gradient. Early in training that noise is irrelevant next to how far the parameters still have to travel, so large steps are fine. Late in training, near a minimum, a fixed large $\alpha$ makes the parameters bounce around inside a region set by that noise rather than settling — decaying $\alpha$ shrinks that final wandering radius.
+
+**Smooth inverse-time decay:**
+$$\alpha_t = \frac{\alpha_0}{1 + \text{decay\_rate} \cdot t}$$
+
+**Staircase decay** (constant for `time_interval` epochs at a stretch, then drops):
+$$\alpha_t = \frac{\alpha_0}{1 + \text{decay\_rate} \cdot \lfloor t / \text{time\_interval} \rfloor}$$
+
+Setting `time_interval=1` makes staircase decay reduce exactly to inverse-time decay — verified in the notebook's sanity checks, along with epoch-0 being undecayed and the closed form at a specific epoch.
+
+**A third gotcha in the same family as the $dA^{[L]}$ bug (§3.5) and Adam's $t$ bug (§3.11):** decay is indexed by the **epoch**; Adam's bias correction is indexed by $t$, the **global parameter-update counter**. Both counters are live in the same training loop and are trivially swappable. Passing $t$ into a decay schedule instead of the epoch index would decay $\alpha$ roughly 94x too fast at batch size 256 over 24,000 examples ($t$ reaches ~9,400 over a 100-epoch run, vs. 99 for the epoch index), collapsing the effective step to near zero almost immediately. Like both prior bugs, this would still produce a smooth, plausible-looking loss curve — it does not fail loudly. `nn_model`'s final print line reports the schedule's actual $\alpha_0 \to \alpha_{\text{final}}$, specifically so this is checkable at a glance. Verified directly in the v7 sweep (§4.3): every printed final $\alpha$ matched its closed-form value exactly (e.g. staircase, decay\_rate=0.1 → $\alpha_0/1.9$; inverse, decay\_rate=0.1 → $\alpha_0/10.9$).
+
 ### 3.8 Evaluation Metrics
 
 **Circular angular MAE** (accounts for the $\pm180°$ wrap so a correct prediction right at the boundary isn't scored as a huge error):
@@ -242,6 +258,8 @@ Architecture (v0–v3): `[n_in, 64, 64, 4]`, ReLU hidden / linear output, $\alph
 | v4 — increased capacity (`[4,256,128,64,4]`), still full-batch GD, 3000 iterations | 4 | 30,000 | 0.040 | 1.29 | 14.78 | 45.73 | 20.60 | 56.2% | 74.08 | 68.65 | 140.34 |
 | v5 — mini-batch GD (§3.10), batch size 256, 100 epochs, same architecture as v4 | 4 | 30,000 | 0.012 | 0.97 | 12.33 | 38.24 | 17.18 | 57.0% | 48.89 | 46.29 | 88.95 |
 | v6 — Adam (§3.11), $\alpha = 3\times10^{-4}$, all else identical to v5 | 4 | 30,000 | **0.0032** | **0.64** | **11.86** | **36.95** | **16.49** | 57.0% | **31.61** | **28.84** | **60.09** |
+| v7 — LR decay (§3.12) evaluated via sweep, $\alpha_0=3\times10^{-4}$; no decay rate beat "no decay," so v7 = v6 | 4 | 30,000 | 0.0032 | 0.64 | 11.86 | 36.95 | 16.49 | 57.0% | 31.61 | 28.84 | 60.09 |
+| **v8 — LR decay paired with a larger $\alpha_0$ (§4.4): $\alpha_0=2\times10^{-3}$, inverse decay $\to\approx3\times10^{-4}$ by epoch 99** | 4 | 30,000 | **0.0015** | 0.48 | **11.70** | 36.43 | **16.20** | 58.8% | **22.61** | **20.91** | **43.32** |
 
 *(Test-set numbers shown; dev-set numbers track within ~1% of test throughout, so the model is not overfitting at this scale.)*
 
@@ -291,7 +309,9 @@ Since the thesis's primary accuracy criterion is end-effector (pose) error, it m
 
 **Re-run on v6 (Adam, §3.11):** conclusion unchanged again — $\text{corr}(e_{\text{pose}}, |\sin\theta_3|) = 0.068$, $\text{corr}(e_{\text{pose}}, r) = 0.091$, both still weak; the worst-error decile's mean $|\sin\theta_3|$ was 0.630 vs. 0.633 overall (i.e. not concentrated near the elbow singularity at all); and mean pose error near vs. elsewhere was 31.80mm vs. 31.57mm (elbow) and 29.60mm vs. 32.12mm (base). The branch-selection side-finding also persisted: 48.8% near the elbow singularity vs. 59.0% elsewhere, and 86.0% near the base singularity vs. 49.7% elsewhere.
 
-**Standing conclusion across v3, v5, and v6:** the §4.1 implication has now been confirmed three times and has been *acted on* successfully. It predicted that training improvements would be higher-leverage for pose error than singularity-targeted oversampling; two successive training changes (mini-batching, then Adam) have since taken pose error from 101.6mm → 48.9mm → 31.6mm without any singularity-specific intervention, while the singularity correlations stayed weak throughout. The prediction and the outcome are worth presenting together in the thesis — it is one of the few places in this project where a diagnostic drove a decision and the decision paid off as predicted.
+**Standing conclusion across v3, v5, v6, and v8:** the §4.1 implication has now been confirmed four times and has been *acted on* successfully. It predicted that training improvements would be higher-leverage for pose error than singularity-targeted oversampling; three successive training changes (mini-batching, then Adam, then decay paired with a larger $\alpha_0$ — §4.4) have since taken pose error from 101.6mm → 48.9mm → 31.6mm → 22.6mm without any singularity-specific intervention, while the singularity correlations stayed weak throughout (v8's re-check: 0.054 elbow, 0.059 base). The prediction and the outcome are worth presenting together in the thesis — it is one of the few places in this project where a diagnostic drove a decision and the decision paid off as predicted, repeatedly.
+
+**Interpretation (v6→v7) — learning-rate decay, an honest negative result.** The prediction going into this experiment (recorded before running it, not after) was that the gain might be small or absent: $\alpha=3\times10^{-4}$ was already the *smallest* $\alpha$ tested in the §4.2 sweep and had already won, which is not obviously the "bouncing at too large a step near the minimum" regime decay is meant to fix. The §4.3 sweep confirms this more strongly than expected: **every decay configuration tested performed worse than no decay**, monotonically so as decay\_rate increased — from 33.4mm (mildest rate) up to 59.9mm (most aggressive), against 31.61mm for no decay. See §4.3 for the full table and mechanism. v7 is therefore reported as v6's numbers with `decay=None` confirmed as the genuine winner of a real search, not a placeholder — the result belongs in the thesis as a demonstration that decay is not automatically beneficial, and that its benefit depends on where in the loss landscape $\alpha_0$ already sits at the epoch budget being used.
 
 ### 4.2 Learning-rate sweep for v6 (and a caution about using cost as the selection criterion)
 
@@ -310,6 +330,80 @@ Since $\alpha$ is not comparable across optimizers (§3.11), v6 was selected fro
 **The important finding here is that final cost and pose error disagree.** The lowest-cost run ($\alpha=3\times10^{-3}$, $J=0.002673$) has a *worse* pose error (34.53mm) than the selected run ($J=0.003168$, 31.61mm), and also the worst angle MAE and worst branch-selection accuracy in the sweep. Selecting a model by training cost would therefore have picked a measurably worse model by the thesis's own stated criterion (end-effector accuracy). This is a concrete, controlled instance of the metric question already raised in §6.7 — the normalized-MSE training objective is a proxy, and the gap between it and the criterion actually being optimized for is large enough to change which model gets selected. Model selection in this project should be done on pose error; reported cost values should be read as diagnostics of convergence, not as a ranking.
 
 **A prediction that did not hold:** $\alpha=10^{-2}$ was expected to be unstable or divergent. It was neither — it converged, just to a worse solution (0.004571, 41.95mm). Adam's per-parameter normalization evidently makes it more tolerant of an oversized $\alpha$ than plain GD would be at a comparable relative overshoot. Recorded because a stability claim was made in advance and the data contradicted it.
+
+### 4.3 Learning-rate decay sweep for v7
+
+$\alpha_0$ is pinned to $3\times10^{-4}$ (v6's winner from §4.2) throughout, so this sweep changes exactly one thing at a time versus v6: the decay schedule and its decay\_rate. Architecture, batch size, epoch count, and seed are all held at v6's values (`[4,256,128,64,4]`, batch 256, 100 epochs, seed 1). `v6-repro` doubles as the sweep's baseline row and a regression test on the `_step`/decay refactor.
+
+| Run | Decay | decay\_rate | Final $\alpha$ | Final cost $J$ | Mean angle MAE (°) | Pose error, mean (mm) | Elbow selection | Time (s) |
+|---|---|---|---|---|---|---|---|---|
+| **`v6-repro`** | none | — | $3\times10^{-4}$ | 0.003168 | **16.485** | **31.61** | 57.0% | 59.8 |
+| `v7-stair-0.1` | staircase (10) | 0.1 | $\alpha_0/1.9$ | 0.003722 | 16.712 | 33.44 | 56.7% | 62.2 |
+| `v7-inv-0.01` | inverse | 0.01 | $\alpha_0/2.0$ | 0.003870 | 16.664 | 33.67 | 57.8% | 62.5 |
+| `v7-stair-0.3` | staircase (10) | 0.3 | $\alpha_0/3.7$ | 0.005301 | 17.604 | 36.81 | 55.4% | 60.0 |
+| `v7-inv-0.03` | inverse | 0.03 | $\alpha_0/4.0$ | 0.005443 | 17.560 | 36.86 | 56.2% | 59.2 |
+| `v7-stair-1.0` | staircase (10) | 1.0 | $\alpha_0/10.0$ | 0.007864 | 17.336 | 43.05 | 56.9% | 61.7 |
+| `v7-inv-0.1` | inverse | 0.1 | $\alpha_0/10.9$ | 0.008686 | 17.774 | 46.08 | 56.8% | 63.1 |
+| `v7-inv-0.3` | inverse | 0.3 | $\alpha_0/30.7$ | 0.012632 | 17.551 | 59.86 | 57.7% | 60.1 |
+
+**No decay rate at this $\alpha_0$ beat no decay — every row is strictly worse than `v6-repro`, monotonically so as decay\_rate increases.** This is the cleanest possible outcome for isolating cause: cost, angle MAE, and pose error all move together, worsening in lockstep as $\alpha$ is driven down more aggressively (for context: staircase decay\_rate=0.1 finishes at $\alpha_0/1.9 \approx 1.6\times10^{-4}$; inverse decay\_rate=0.3 finishes near $\alpha_0/31 \approx 10^{-5}$, close to two orders of magnitude below $\alpha_0$).
+
+**Why decay hurt here rather than helping (consistent with the prediction in §3.12/§4's interpretation):** decay's benefit comes from letting a *larger* $\alpha_0$ move fast early and then settle late, avoiding the late-training noise-driven wandering a fixed large $\alpha$ would cause. But $\alpha_0=3\times10^{-4}$ here is already the smallest value in the §4.2 sweep and was already the winner — evidence it was not in a "too large, bouncing near the minimum" regime to begin with. Shrinking an already-small step further, on a 100-epoch budget, simply means less total displacement over the run: fewer effective updates reach their full size, so the network is under-trained relative to the no-decay run at the same epoch count. This is a fully mechanical explanation, not a mysterious one, and it predicts (though this was not tested) that decay would look more favorable paired with a *larger* $\alpha_0$ and/or a longer epoch budget than used here — a natural follow-up if this is revisited.
+
+Elbow-selection accuracy stayed flat across every row (54.6%–58.3%, no trend with decay\_rate) — consistent with the established pattern (§4 interpretations, §6 item 3) that branch selection is floored by the problem's one-to-many structure and is untouched by anything optimizer- or schedule-related.
+
+### 4.4 Decay paired with a larger $\alpha_0$ (v8) — a three-pass sweep
+
+§4.3's mechanical explanation for its negative result made a specific, testable prediction: decay would look more favorable paired with a *larger* $\alpha_0$, because $3\times10^{-4}$ was already the smallest/best-tuned fixed rate and not in the "step too large, bouncing near the minimum" regime decay is meant to fix. This section tests that prediction directly, across three widening passes (all Adam, `[4,256,128,64,4]`, batch 256, 100 epochs, seed 1 — only $\alpha_0$ and the decay target vary). **The sweep cells themselves were run interactively in Colab and then deleted from the notebook once the winner was promoted to the canonical training cell**, per the user's request to keep the notebook itself showing only the clean path to the final model; this section is therefore the complete record of the search.
+
+**Pass 1 — coarse grid.** $\alpha_0\in\{10^{-3},3\times10^{-3},10^{-2}\}$ (the three larger rates already characterized in §4.2), each with three decay conditions: no decay (re-run for a same-log comparison), "mild" (decay\_rate=0.01, $\alpha$ halves by epoch 99), and "targeted" (decay\_rate chosen so $\alpha\to\approx3\times10^{-4}$ by epoch 99 — the value that won §4.2).
+
+| $\alpha_0$ | No decay | Targeted decay (→~3e-4) | Decay won? |
+|---|---|---|---|
+| $10^{-3}$ | 33.64mm | 27.72mm | yes |
+| $3\times10^{-3}$ | 34.53mm | **24.35mm** | yes |
+| $10^{-2}$ | 41.95mm | 27.89mm | yes |
+
+Decay won at every $\alpha_0$ tested — the opposite of §4.3's result, and exactly as predicted. The mild condition also did well at $\alpha_0=10^{-3}$ (24.40mm, nearly tying the coarse-grid's best), suggesting the region around $\alpha_0\approx10^{-3}$–$3\times10^{-3}$ was worth resolving more finely rather than treating $\alpha_0=3\times10^{-3}$ as a lucky single point.
+
+**Pass 2 — fine grid.** Two sub-sweeps, still inverse decay only (holding schedule type fixed keeps this a single-variable extension of the $\alpha_0$ question):
+
+*Grid A* — finer $\alpha_0$ spacing (`1e-3` to `5e-3`, 8 steps), all decaying to the same $\approx3\times10^{-4}$ target that won Pass 1:
+
+| $\alpha_0$ | Pose error (mm) |
+|---|---|
+| $1\times10^{-3}$ | 27.72 |
+| $1.5\times10^{-3}$ | 25.03 |
+| **$2\times10^{-3}$** | **22.54** |
+| $2.5\times10^{-3}$ | 23.93 |
+| $3\times10^{-3}$ | 24.35 |
+| $3.5\times10^{-3}$ | 22.85 |
+| $4\times10^{-3}$ | 23.38 |
+| $5\times10^{-3}$ | 24.38 |
+
+This is a shallow, well-behaved optimum spanning $\alpha_0\in[2\times10^{-3},3.5\times10^{-3}]$ (all within 22.5–23.9mm), degrading gently on both sides — not a fragile, noise-driven single point. **New best: $\alpha_0=2\times10^{-3}\to\approx3\times10^{-4}$, 22.54mm.**
+
+*Grid B* — at $\alpha_0\in\{2\times10^{-3},3\times10^{-3},4\times10^{-3}\}$, decaying further to $\approx10^{-4}$ instead of $\approx3\times10^{-4}$: uniformly worse than Grid A at the same $\alpha_0$ (e.g. $\alpha_0=3\times10^{-3}$: 31.13mm at target $10^{-4}$ vs. 24.35mm at target $3\times10^{-4}$). This confirms $\approx3\times10^{-4}$ is specifically the right value to *settle near* — not an arbitrary choice, and decaying past it re-triggers the same under-training mechanism as §4.3's original null result, just from a different starting point.
+
+**Pass 3 — even larger $\alpha_0$.** Pushes further out ($\alpha_0\in\{7\times10^{-3},10^{-2},1.5\times10^{-2},2\times10^{-2},3\times10^{-2},5\times10^{-2}\}$, all still targeting $\approx3\times10^{-4}$) to check whether the degradation past $3.5\times10^{-3}$ continues monotonically or a second good regime exists:
+
+| $\alpha_0$ | Pose error (mm) | Initial cost (epoch 0) |
+|---|---|---|
+| $7\times10^{-3}$ | 25.22 | 0.37 |
+| $10^{-2}$ | 27.89 | 0.50 |
+| $1.5\times10^{-2}$ | 39.24 | 0.87 |
+| $2\times10^{-2}$ | 54.03 | 1.54 |
+| $3\times10^{-2}$ | 55.67 | 4.95 |
+| $5\times10^{-2}$ | **112.00** | 33.56 |
+
+No second regime — degradation continues and becomes catastrophic. At $\alpha_0=5\times10^{-2}$ the initial cost (33.6, vs. 0.3–0.9 everywhere else) shows the step is too large even for Adam's per-parameter normalization to absorb gracefully at epoch 0; decay (this row's is the fastest of the whole sweep) cannot fully recover from a bad start within 100 epochs. This is a *different* failure mode from §4.3's — that one failed by under-training an already-good rate; this one fails from early instability decay arrives too late to fix. The two mechanisms bracket a genuine sweet spot between them, rather than the sweet spot being one arbitrary lucky value.
+
+**Overall picture, mechanistically complete:**
+- $\alpha_0$ too small with decay (§4.3, $\alpha_0=3\times10^{-4}$; or Pass 2's $\alpha_0=10^{-3}$ decayed to $10^{-4}$) → under-trains → worse than the relevant fixed-$\alpha$ baseline.
+- $\alpha_0\in[2\times10^{-3},3.5\times10^{-3}]$ decaying to $\approx3\times10^{-4}$ → **best regime found in this project: 22.54–22.85mm.**
+- $\alpha_0\gtrsim1.5\times10^{-2}$ → early instability decay can't undo → degrades quickly, catastrophically by $5\times10^{-2}$.
+
+**v8 selection and promotion.** $\alpha_0=2\times10^{-3}$, inverse decay to $\approx3\times10^{-4}$ by epoch 99 (decay\_rate=0.0572) was promoted as the canonical model, re-run with a fresh seed-1 pass to generate the numbers in §4's results table (22.61mm test pose error — matching the sweep's 22.54mm to within run-to-run noise) and re-verified against the §4.1-style singularity diagnostic (correlations stayed weak: $0.054$ elbow, $0.059$ base — consistent with every prior version, the remaining error is still a general precision ceiling, not a singularity effect). This is a **29% improvement over v6/v7's tuned-fixed-$\alpha$ baseline (31.61mm)** and the best result across the entire from-scratch track to date.
 
 ---
 
@@ -384,7 +478,7 @@ with $\lambda_{\text{FK}} = 0.1$ in the current configuration ($K=8$ components,
    - **(B) — deferred, flagged for future reference.** Use the branch label only as a *training-time* signal to build a 2-head (or branch-specialized-component) architecture, with the network still taking only $(x,y,z)$ as input and outputting both candidate solutions unprompted, rather than being told the branch. Not implemented; worth revisiting since (A)'s selection step is now shown to be unreliable for recovering the *specific* sampled branch (though not for finding *a* valid one).
 7. **New open question raised by v3's result:** is angle-MAE-against-one-sampled-label even the right accuracy metric for this intrinsically one-to-many problem, given pose error (which doesn't care which branch was used) tells a very different and arguably more meaningful story? Worth raising explicitly in the thesis's methodology/discussion, and worth deciding before investing further effort in reducing angle-MAE specifically.
    - **Strengthened by v6 (§4.2).** The Adam learning-rate sweep produced a case where the *training cost* and the *pose error* rank models differently — the lowest-cost run was not the most accurate one, and selecting on cost would have chosen a model 2.9mm worse in pose error and 1.8° worse in angle MAE. So the metric question is not only about angle-MAE vs. pose error at evaluation time; it also affects **model selection**, and it has now been observed rather than merely hypothesized.
-8. **Optimizer progression is now complete through Adam (§3.11, v6); learning-rate decay is the remaining unimplemented Course 2 optimizer topic.** It is orthogonal to Adam (Adam adapts the *per-parameter* step; decay shrinks the *global* step size over time) and the two are routinely combined, so it is a clean single-variable follow-up on top of the settled v6 baseline rather than something that needed bundling into it.
+8. **Optimizer progression is now complete through learning-rate decay (§3.12, v7/v8) — the full Course 2 optimizer topic list (momentum/RMSprop/Adam, mini-batching, LR decay) has been implemented, and the best-performing configuration found and promoted.** Decay was first added as a single-variable follow-up on top of v6 (§3.11) at v6's own $\alpha_0$ (§4.3): every configuration tested there was worse than no decay, a genuine negative result caused by $\alpha_0$ already being the smallest/best-tuned rate. That negative result made a specific mechanical prediction — decay should help paired with a *larger* $\alpha_0$ — which was then tested directly across a three-pass sweep (§4.4) and confirmed: $\alpha_0=2\times10^{-3}$ decaying to $\approx3\times10^{-4}$ beat every prior version, **22.61mm test pose error vs. v6/v7's 31.61mm (a 29% improvement)**, now the project's best result. Both the negative and positive decay results are reportable, and together they demonstrate that a well-isolated null finding can directly motivate the experiment that supersedes it.
 
 ---
 
@@ -412,3 +506,11 @@ with $\lambda_{\text{FK}} = 0.1$ in the current configuration ($K=8$ components,
 - **Two findings from the sweep worth carrying into the thesis:** (1) final cost and pose error *ranked the runs differently* — selecting on cost would have picked a worse model by the thesis's own criterion, which turns the §6.7 metric question from a hypothesis into an observed model-selection problem; (2) α = 1e-2 was predicted to diverge and did not, it merely converged worse — recorded as a corrected prediction.
 - Re-ran the singularity diagnostic (§4.1) on v6: conclusion unchanged for the third consecutive version. Added a standing note that §4.1's original implication (prefer training improvements over singularity-targeted sampling) has now been acted on twice and paid off as predicted, 101.6mm → 48.9mm → 31.6mm.
 - Answers this session's conceptual questions — QUESTIONS.md Q6 (what learning-rate decay is, and why it is orthogonal to rather than redundant with Adam) and Q7 (whether implementing Adam means implementing momentum and RMSprop together).
+
+### 09-08-26: Sunday
+- Added **learning-rate decay** to Model A (§3.12): both Course 2 forms (`update_lr`, smooth inverse-time; `schedule_lr_decay`, staircase), selected via a new `decay` argument on `nn_model`, defaulting to `None` so v0–v6 stay bit-identical. Verified via a `v6-repro` regression run (exact match: cost 0.003168, pose 31.61mm, angle MAE 16.485°, 9,400 parameter updates) before trusting any decay row.
+- Logged as **v7** (§4) via a decay-rate sweep (§4.3, $\alpha_0=3\times10^{-4}$ pinned to v6's winner, single-variable vs. v6): **every decay configuration tested was worse than no decay**, monotonically so as decay\_rate increased (33.4mm → 59.9mm, vs. 31.61mm for no decay). This was flagged as a real possibility going in (§4's interpretation), not discovered after the fact — $\alpha_0$ was already the smallest value in the §4.2 sweep and had already won, which is not the regime decay is meant to help. v7's reported numbers equal v6's, with `decay=None` as the confirmed winner of a genuine search.
+- Re-ran the §4.1 singularity diagnostic and the §5 scatter-plot diagnostic on the v7 run for consistency with prior versions; both reproduce v6's numbers exactly, as expected since v7's final configuration is identical to v6's.
+- Lifted the `.claude/skills/thesis_check/SKILL.md` hold on learning-rate decay (see that file's changelog note) now that it's implemented.
+- **Tested §4.3's untested prediction directly: paired decay with larger $\alpha_0$ values across a three-pass sweep (§4.4, coarse grid → fine grid → even-larger-$\alpha_0$ grid), 25 runs total.** Result: decay won at every $\alpha_0$ tested up to a point, with a well-characterized optimum at $\alpha_0=2\times10^{-3}$ decaying to $\approx3\times10^{-4}$ (22.54mm in the sweep), degrading on both sides — under-training when $\alpha_0$ too small or decayed too far, catastrophic early instability when $\alpha_0\gtrsim1.5\times10^{-2}$.
+- **Promoted this as v8, the new best result (22.61mm test pose error, −29% vs. v6/v7's 31.61mm).** Re-ran the training/evaluate/diagnostic cells with the winning config; the singularity diagnostic re-confirmed the standing conclusion (§4.1) for a fourth version. Per the user's explicit request, deleted the six exploratory sweep cells from the notebook after promotion — the full grid data lives only in `thesis_doc.md` §4.4 now, not in the notebook itself.

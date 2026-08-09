@@ -23,7 +23,7 @@ path *within* the repo — including the repo name or a stray trailing space
 silently creates a duplicate at a new path instead of updating this one (this
 already happened once).
 
-**Last full sync:** 2026-08-08, after adding the v6 Adam optimizer. **Four cells were inserted**, shifting every index from 21 onward: `lozV7gLneGX7`/`TFeZsHyxeMlU` (§3.7 Adam) at 21–22, and `Od3DQJzrfqVE`/`Q_qHfieOfvY3` (§4.2 LR sweep) at 28–29. Live notebook is now 33 cells.
+**Last full sync:** 2026-08-09, after promoting v8 (α₀=2e-3, inverse decay → ~3e-4) as the canonical model and deleting the six §4.4 exploratory sweep cells (coarse grid, fine grid, even-larger-α₀ grid — all logged in `thesis_doc.md` §4.4 instead). Net for the session: **4 cells inserted** relative to the pre-session baseline — `EmVG158lDD33`/`vFfzoTn8DG6e` (§3.8 LR decay) at 23–24, and `dj1b2_LGD_pr`/`f1jC4InREEN6` (§4.3 decay sweep, v7) at 30–31. The training cell (`4-ONOXF2LQjR`) and evaluate/log cell (`-xmJjm1oLSrj`) were edited in place to v8's config, not moved. Live notebook is now 37 cells (back to the same count as after v7, since the v8 exploration cells were added then removed).
 
 ---
 
@@ -54,25 +54,28 @@ already happened once).
 | 20 | `s4BUtqqiBDb3` | code | 3.6 | `random_mini_batches` + sanity check |
 | 21 | `lozV7gLneGX7` | markdown | 3.7 | **(v6)** Adam rationale: momentum + RMSprop + bias correction; the `t`-counts-updates and lr-doesn't-carry-over warnings |
 | 22 | `TFeZsHyxeMlU` | code | 3.7 | **(v6)** `initialize_adam`, `update_parameters_with_adam` + sanity checks (β₁=β₂=0 reduces to a signed step; bias-corrected first step is lr-sized) |
-| 23 | `BbN5bi1QLL9H` | markdown | 3.8 | `nn_model` docs — batching mode × optimizer mode, and the shared `_step` helper |
-| 24 | `sN2abBUaLNT8` | code | 3.8 | `nn_model` — takes `optimizer`/`beta1`/`beta2`/`epsilon`; inner `_step` owns the global update counter `t`; returns `(parameters, costs, train_time, final_cost)` |
-| 25 | `rjaj4jROLOu0` | markdown | 4. Analysis | Section intro; mentions built-in timer + `model_a_training_log.csv` |
-| 26 | `4-ONOXF2LQjR` | code | 4. Analysis | Training cell: `VERSION`/`NOTES`/`layer_dims`/`BATCH_SIZE`/`NUM_ITERATIONS`/`OPTIMIZER`/`LEARNING_RATE`/`BETA1`/`BETA2`/`EPSILON`, calls `nn_model`, plots cost curve |
-| 27 | `-xmJjm1oLSrj` | code | 4. Analysis | `predict_ik`, `evaluate` (returns `config_accuracy` too), `log_run_metrics` (now logs optimizer/betas/epsilon, archives the CSV on schema change, NaN-tolerant rounding), calls both |
-| 28 | `Od3DQJzrfqVE` | markdown | 4.2 | **(v6)** Why the LR sweep exists — α isn't comparable across optimizers |
-| 29 | `Q_qHfieOfvY3` | code | 4.2 | **(v6)** Sweep over `SWEEP_CONFIGS` (gd@0.05 as v5-repro + Adam at 3e-4/1e-3/3e-3/1e-2); logs each, survives divergence, prints ranked summary. Does **not** overwrite `parameters` |
-| 30 | `e7qfFh-89CiB` | markdown | 5. Diagnostic | Singularity-vs-precision-ceiling intro |
-| 31 | `qq7hQwgaLUau` | code | 5. Diagnostic | Scatter plot: predicted vs. true angle, per joint |
-| 32 | `5aBqP7IEd_VH` | code | 5. Diagnostic | Singularity proximity correlations, worst-decile stratification, branch-selection accuracy near each singularity |
+| 23 | `EmVG158lDD33` | markdown | 3.8 | **(v7)** LR decay rationale: orthogonal to Adam, inverse-time + staircase formulas, epoch-vs-`t` gotcha warning |
+| 24 | `vFfzoTn8DG6e` | code | 3.8 | **(v7)** `update_lr`, `schedule_lr_decay` + sanity checks (epoch-0 undecayed, closed-form at epoch 10, staircase constant-then-drops, `time_interval=1` reduces to `update_lr`) |
+| 25 | `BbN5bi1QLL9H` | markdown | 3.9 | `nn_model` docs — batching mode × optimizer mode × decay mode, and the shared `_step` helper |
+| 26 | `sN2abBUaLNT8` | code | 3.9 | `nn_model` — takes `optimizer`/`beta1`/`beta2`/`epsilon`/`decay`/`decay_rate`/`time_interval`; inner `_step` owns the global update counter `t`; `_epoch_lr` recomputes α once per epoch; returns `(parameters, costs, train_time, final_cost)` |
+| 27 | `rjaj4jROLOu0` | markdown | 4. Analysis | Section intro; mentions built-in timer + `model_a_training_log.csv` |
+| 28 | `4-ONOXF2LQjR` | code | 4. Analysis | **(v8, canonical)** Training cell: `VERSION="v8"`, `LEARNING_RATE=2e-3`, `DECAY="inverse"`, `DECAY_RATE=0.0572` (→ ~3e-4 by epoch 99) — the winner of the §4.4 sweep (deleted from the notebook after promotion; full grid in `thesis_doc.md` §4.4). Test pose error 22.61mm |
+| 29 | `-xmJjm1oLSrj` | code | 4. Analysis | `predict_ik`, `evaluate` (returns `config_accuracy` too), `log_run_metrics` (logs decay/decay_rate/time_interval, archives the CSV on schema change, NaN-tolerant rounding), calls both |
+| 30 | `Od3DQJzrfqVE` | markdown | 4.2 | **(v6)** Why the LR sweep exists — α isn't comparable across optimizers |
+| 31 | `Q_qHfieOfvY3` | code | 4.2 | **(v6)** Sweep over `SWEEP_CONFIGS` (gd@0.05 as v5-repro + Adam at 3e-4/1e-3/3e-3/1e-2); logs each, survives divergence, prints ranked summary. Does **not** overwrite `parameters` |
+| 32 | `dj1b2_LGD_pr` | markdown | 4.3 | **(v7)** Why the decay sweep exists — α₀ pinned to v6's winner, single-variable vs. v6, `v6-repro` doubles as regression test |
+| 33 | `f1jC4InREEN6` | code | 4.3 | **(v7)** Sweep over `DECAY_SWEEP_CONFIGS` (none as v6-repro + inverse@0.01/0.03/0.1/0.3 + staircase@0.1/0.3/1.0); logs each, survives divergence, prints ranked summary by pose error. Does **not** overwrite `parameters`. Result: **every decay rate was worse than no decay** |
+| 34 | `e7qfFh-89CiB` | markdown | 5. Diagnostic | Singularity-vs-precision-ceiling intro |
+| 35 | `qq7hQwgaLUau` | code | 5. Diagnostic | Scatter plot: predicted vs. true angle, per joint |
+| 36 | `5aBqP7IEd_VH` | code | 5. Diagnostic | Singularity proximity correlations, worst-decile stratification, branch-selection accuracy near each singularity |
 
 ---
 
 ## Current key variables (after running top to bottom)
 
-`parameters`, `costs`, `train_time`, `final_cost` — from cell 26's `nn_model` call.
-`VERSION`, `NOTES`, `layer_dims`, `BATCH_SIZE`, `NUM_ITERATIONS`, `OPTIMIZER`, `LEARNING_RATE`, `BETA1`, `BETA2`, `EPSILON` — cell 26's run config (edit these to start a new experiment; bump `VERSION` for a new logged run).
-`dev_pred_theta`/`test_pred_theta`, `*_joint_mae`, `*_pose_err`, `*_config_acc` — from cell 27's `evaluate()` calls.
-`sweep_results` — from cell 29; a list of `(tag, optimizer, lr, cost, angle_mae, pose_mm, elbow_acc, seconds)`. Cell 29 uses `_`-prefixed locals throughout specifically so it does **not** clobber the canonical run's globals.
-`model_a_training_log.csv` — written by cells 27 and 29, lives in Colab's ephemeral session (`/content`). **Not in the repo, and it does not survive a runtime restart** — unlike the notebook, saving to GitHub does not carry it along. The v5 row from the previous session was already lost this way. Currently holds 6 rows (`v5-repro`, `v6-lr3e-04`, `v6-lr1e-03`, `v6-lr3e-03`, `v6-lr1e-02`, `v6`). If the version-to-version comparison history matters, it needs downloading (or writing to mounted Drive) before the runtime recycles.
+`parameters`, `costs`, `train_time`, `final_cost` — from cell 28's `nn_model` call (v8 canonical config).
+`VERSION`, `NOTES`, `layer_dims`, `BATCH_SIZE`, `NUM_ITERATIONS`, `OPTIMIZER`, `LEARNING_RATE`, `BETA1`, `BETA2`, `EPSILON`, `DECAY`, `DECAY_RATE`, `TIME_INTERVAL` — cell 28's run config (edit these to start a new experiment; bump `VERSION` for a new logged run).
+`dev_pred_theta`/`test_pred_theta`, `*_joint_mae`, `*_pose_err`, `*_config_acc` — from cell 29's `evaluate()` calls.
+`model_a_training_log.csv` — written by cells 29 and 31, lives in Colab's ephemeral session (`/content`). **Not in the repo, and it does not survive a runtime restart** — unlike the notebook, saving to GitHub does not carry it along. As of this session it holds the v6/v7 rows plus the full v8 sweep history (coarse/fine/xlarge grids), even though the sweep cells themselves were deleted from the notebook after v8 was promoted — the log is currently the *only* place that raw per-run data survives outside `thesis_doc.md`'s summarized tables. Download it (or write to mounted Drive) before the runtime recycles if that raw data matters.
 
-Note the log's schema changed in v6 (added `optimizer`, `beta1`, `beta2`, `epsilon`). `log_run_metrics` compares the existing header against its field list and renames the old file to `model_a_training_log_schema_<timestamp>.csv` on a mismatch rather than appending misaligned rows — so a stale log won't silently corrupt a new one.
+Note the log's schema changed in v6 (added `optimizer`/`beta1`/`beta2`/`epsilon`) and again in v7 (added `decay`/`decay_rate`/`time_interval`). `log_run_metrics` compares the existing header against its field list and renames the old file to `model_a_training_log_schema_<timestamp>.csv` on a mismatch rather than appending misaligned rows — so a stale log won't silently corrupt a new one.
