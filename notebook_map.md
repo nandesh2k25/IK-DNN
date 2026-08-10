@@ -23,7 +23,7 @@ path *within* the repo — including the repo name or a stray trailing space
 silently creates a duplicate at a new path instead of updating this one (this
 already happened once).
 
-**Last full sync:** 2026-08-10 (branch `error_diagnosis`), after adding §4.5 (oracle-conditioned diagnostic, 2 cells at 30–31) and §4.6 (elbow-branch ceiling diagnostic, 2 more cells at 32–33), shifting everything from the old §4.2 onward down by 4 total. Live notebook is now 41 cells. The runtime had recycled at the start of this session (fresh `execution_count`s) and was re-run top-to-bottom through cell 31 before either diagnostic's numbers could be trusted — see `CLAUDE.md`'s Colab-flakiness note.
+**Last full sync:** 2026-08-10 (branch `error_diagnosis`), after adding §4.5 (oracle-conditioned diagnostic) and §4.6 (elbow-branch ceiling diagnostic) at 30–33, then **deleting the superseded §4.2 (v6 LR sweep) and §4.3 (v7 decay sweep) cells** — both optimizers/configs are superseded by v8's promoted config in the canonical training cell, and both sweeps' full result tables already live in `thesis_doc.md` §4.2/§4.3, matching the precedent already set when the six §4.4 sweep cells were removed on 2026-08-09. Net for the session: +4 new diagnostic cells, −4 superseded sweep cells. Live notebook is now **37 cells**, same count as before this session despite the new diagnostics.
 
 Prior sync (2026-08-09): promoted v8 (α₀=2e-3, inverse decay → ~3e-4) as the canonical model and deleted the six §4.4 exploratory sweep cells (coarse grid, fine grid, even-larger-α₀ grid — all logged in `thesis_doc.md` §4.4 instead).
 
@@ -67,13 +67,9 @@ Prior sync (2026-08-09): promoted v8 (α₀=2e-3, inverse decay → ~3e-4) as th
 | 31 | `xMzyNJ1vLWrf` | code | 4.5 | **(NEW)** `evaluate_oracle()` — same as `evaluate()` but conditions on true `elbow_config`; prints dev/test results + a best-of-2-vs-oracle comparison table. Result: oracle mean angle MAE 1.19° vs. best-of-2's 16.20° (confirms branch-selection artifact); oracle pose error 30.16mm is *worse* than best-of-2's 22.61mm (best-of-2's min-of-two-candidates acts as implicit denoising) |
 | 32 | `SayL9p-3PD_4` | markdown | 4.6 | **(NEW)** Elbow-branch ceiling diagnostic rationale — analytic 2-link law-of-cosines check for whether both elbow branches are geometrically valid per target |
 | 33 | `tDV7fjDMPHZJ` | code | 4.6 | **(NEW)** `elbow_branch_ceiling()` — solves both branches analytically (no network), counts unique-vs-ambiguous targets, computes a predicted accuracy ceiling. Result: 84.1% of test targets ambiguous (both branches valid) → predicted ceiling 57.9%, matching v8's observed 58.8% almost exactly. Confirms selection accuracy is at its ceiling, not a modelling gap |
-| 34 | `Od3DQJzrfqVE` | markdown | 4.2 | **(v6)** Why the LR sweep exists — α isn't comparable across optimizers |
-| 35 | `Q_qHfieOfvY3` | code | 4.2 | **(v6)** Sweep over `SWEEP_CONFIGS` (gd@0.05 as v5-repro + Adam at 3e-4/1e-3/3e-3/1e-2); logs each, survives divergence, prints ranked summary. Does **not** overwrite `parameters` |
-| 36 | `dj1b2_LGD_pr` | markdown | 4.3 | **(v7)** Why the decay sweep exists — α₀ pinned to v6's winner, single-variable vs. v6, `v6-repro` doubles as regression test |
-| 37 | `f1jC4InREEN6` | code | 4.3 | **(v7)** Sweep over `DECAY_SWEEP_CONFIGS` (none as v6-repro + inverse@0.01/0.03/0.1/0.3 + staircase@0.1/0.3/1.0); logs each, survives divergence, prints ranked summary by pose error. Does **not** overwrite `parameters`. Result: **every decay rate was worse than no decay** |
-| 38 | `e7qfFh-89CiB` | markdown | 5. Diagnostic | Singularity-vs-precision-ceiling intro |
-| 39 | `qq7hQwgaLUau` | code | 5. Diagnostic | Scatter plot: predicted vs. true angle, per joint |
-| 40 | `5aBqP7IEd_VH` | code | 5. Diagnostic | Singularity proximity correlations, worst-decile stratification, branch-selection accuracy near each singularity |
+| 34 | `e7qfFh-89CiB` | markdown | 5. Diagnostic | Singularity-vs-precision-ceiling intro |
+| 35 | `qq7hQwgaLUau` | code | 5. Diagnostic | Scatter plot: predicted vs. true angle, per joint |
+| 36 | `5aBqP7IEd_VH` | code | 5. Diagnostic | Singularity proximity correlations, worst-decile stratification, branch-selection accuracy near each singularity |
 
 ---
 
